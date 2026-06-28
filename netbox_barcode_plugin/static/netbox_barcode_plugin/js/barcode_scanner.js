@@ -9,6 +9,7 @@
     lastLookupPayload: null,
     statusUrlTemplate: "",
     lookupUrl: "",
+    csrfToken: "",
   };
 
   function $(id) {
@@ -72,7 +73,7 @@
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "X-CSRFToken": getCookie("csrftoken") || "",
+        "X-CSRFToken": state.csrfToken || getCookie("csrftoken") || "",
       },
       body: JSON.stringify(body),
     });
@@ -427,6 +428,7 @@
     }
     state.lookupUrl = root.dataset.lookupUrl;
     state.statusUrlTemplate = root.dataset.statusUrlTemplate;
+    state.csrfToken = root.dataset.csrfToken || "";
 
     $("start-scan-button").addEventListener("click", startScanner);
     $("rescan-button").addEventListener("click", startScanner);
