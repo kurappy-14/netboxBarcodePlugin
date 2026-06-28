@@ -1,7 +1,6 @@
 """Navigation menu items for NetBox."""
 
 from netbox.plugins import PluginMenuButton, PluginMenuItem
-from utilities.choices import ButtonColorChoices
 
 menu_items = (
     PluginMenuItem(
@@ -12,7 +11,6 @@ menu_items = (
                 link="plugins:netbox_barcode_plugin:scan",
                 title="バーコードをスキャン",
                 icon_class="mdi mdi-barcode-scan",
-                color=ButtonColorChoices.BLUE,
             ),
         ),
     ),
