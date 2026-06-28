@@ -1,0 +1,48 @@
+.barcode-plugin {
+  max-width: 100%;
+}
+
+.barcode-reader {
+  width: 100%;
+  min-height: 280px;
+  border: 2px dashed var(--bs-border-color, #ced4da);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.barcode-reader video {
+  width: 100% !important;
+  border-radius: 0.5rem;
+}
+
+.manual-search .input-group > .form-control {
+  min-height: 44px;
+}
+
+.trace-list {
+  padding-left: 1.25rem;
+  margin-bottom: 0;
+}
+
+.trace-list li + li {
+  margin-top: 0.35rem;
+}
+
+.status-badge {
+  font-size: 0.95rem;
+}
+
+.result-section + .result-section {
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+  .barcode-reader {
+    min-height: 220px;
+  }
+
+  .barcode-plugin .btn {
+    min-height: 44px;
+  }
+}
