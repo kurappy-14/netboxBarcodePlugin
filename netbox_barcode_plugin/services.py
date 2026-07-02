@@ -259,36 +259,94 @@ def _trace_from_termination(termination):
     return refs
 
 
+def _find_cable_index(refs, cable_url):
+    """Return the index of *this* cable node within a serialized trace path."""
+
+    if not cable_url:
+        return None
+
+    for index, ref in enumerate(refs):
+        if ref and ref.get("type") == "cable" and ref.get("url") == cable_url:
+            return index
+    return None
+
+
+def _split_full_path(refs, cable_url, origin_side):
+    """Split a full end-to-end trace path at *this* cable into A/B sides.
+
+    ``refs`` is a complete path produced by ``trace()`` from one of this
+    cable's terminations, so it starts at ``origin_side``'s device and ends at
+    the opposite side's device. Splitting at this cable yields the two physical
+    sides, each ordered from the cable *outward* to its ultimate endpoint (so
+    ``[-1]`` is that side's final connection).
+
+    Returns ``(a_side, b_side)`` or ``None`` when this cable is not present in
+    the path (older/edge NetBox behaviors).
+    """
+
+    index = _find_cable_index(refs, cable_url)
+    if index is None:
+        return None
+
+    origin_side_refs = list(reversed(refs[:index]))  # ends at origin device
+    far_side_refs = refs[index + 1:]                 # ends at far device
+
+    if origin_side == "a":
+        return origin_side_refs, far_side_refs
+    return far_side_refs, origin_side_refs
+
+
 def trace_cable(cable):
-    """Return A/B side trace arrays and endpoints for a Cable."""
+    """Return A/B side trace arrays and endpoints for a Cable.
+
+    NetBox's ``trace()`` returns the *full* end-to-end path, not a single side.
+    Tracing from the A termination therefore starts at the A-side device and
+    ends at the B-side device (and vice versa). To report each physical side
+    correctly, the full path is split at this cable so that ``a_side`` always
+    ends at the A-side endpoint and ``b_side`` at the B-side endpoint.
+    """
+
+    cable_url = get_object_url(cable)
 
     a_refs = []
-    b_refs = []
-
     for termination in _cable_terminations(cable, "a"):
         a_refs.extend(_trace_from_termination(termination))
-    for termination in _cable_terminations(cable, "b"):
-        b_refs.extend(_trace_from_termination(termination))
 
-    # If this NetBox version exposes Cable.trace(), use it only as a fallback.
-    if not a_refs and not b_refs:
-        trace_method = getattr(cable, "trace", None)
-        if callable(trace_method):
-            try:
-                raw = trace_method()
-                if isinstance(raw, dict):
-                    a_refs = [object_ref(obj) for obj in raw.get("a_side", []) if obj is not None]
-                    b_refs = [object_ref(obj) for obj in raw.get("b_side", []) if obj is not None]
-            except Exception:
-                pass
+    split = _split_full_path(a_refs, cable_url, "a") if a_refs else None
+
+    if split is None:
+        # The A-side trace did not contain this cable (unconnected A end or an
+        # older NetBox). Try tracing from the B termination and splitting that.
+        b_refs = []
+        for termination in _cable_terminations(cable, "b"):
+            b_refs.extend(_trace_from_termination(termination))
+
+        split = _split_full_path(b_refs, cable_url, "b") if b_refs else None
+
+        if split is None:
+            # Final fallback: use Cable.trace() when available, otherwise keep
+            # whatever partial per-side traces we gathered.
+            if not a_refs and not b_refs:
+                trace_method = getattr(cable, "trace", None)
+                if callable(trace_method):
+                    try:
+                        raw = trace_method()
+                        if isinstance(raw, dict):
+                            a_refs = [object_ref(obj) for obj in raw.get("a_side", []) if obj is not None]
+                            b_refs = [object_ref(obj) for obj in raw.get("b_side", []) if obj is not None]
+                    except Exception:
+                        pass
+            split = (a_refs, b_refs)
+
+    a_side, b_side = split
 
     trace = {
-        "a_side": a_refs,
-        "b_side": b_refs,
+        "a_side": a_side,
+        "b_side": b_side,
     }
     endpoints = {
-        "a_side": a_refs[-1] if a_refs else None,
-        "b_side": b_refs[-1] if b_refs else None,
+        "a_side": a_side[-1] if a_side else None,
+        "b_side": b_side[-1] if b_side else None,
     }
     return trace, endpoints
 
