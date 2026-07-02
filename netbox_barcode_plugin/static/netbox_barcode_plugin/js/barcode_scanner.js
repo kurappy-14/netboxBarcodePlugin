@@ -33,6 +33,12 @@
     }
   }
 
+  const STATUS_BADGE_CLASS = {
+    not_created: "text-bg-secondary",
+    configured: "text-bg-warning",
+    laid: "text-bg-success",
+  };
+
   function textEl(tag, text, className) {
     const el = document.createElement(tag);
     if (className) {
@@ -266,8 +272,8 @@
     state.currentCableId = payload.cable.id;
 
     content.appendChild(renderCableSection(payload));
-    content.appendChild(renderTraceSection("A端側の経路", payload.trace.a_side, payload.endpoints.a_side));
-    content.appendChild(renderTraceSection("B端側の経路", payload.trace.b_side, payload.endpoints.b_side));
+    content.appendChild(renderEndpointSummary(payload.endpoints));
+    content.appendChild(renderTraceGrid(payload.trace, payload.endpoints));
 
     card.classList.remove("d-none");
   }
@@ -275,16 +281,15 @@
   function renderCableSection(payload) {
     const section = document.createElement("section");
     section.className = "result-section";
-    section.appendChild(textEl("h5", "ケーブル情報"));
+    section.appendChild(textEl("h5", "ケーブル情報", "result-section-title"));
 
     const cable = payload.cable;
     const dl = document.createElement("dl");
-    dl.className = "row mb-0";
+    dl.className = "row mb-2";
 
     addDefinition(dl, "ケーブル名", cableLink(cable));
     addDefinition(dl, "バーコード", textEl("span", cable.barcode || "-"));
     addDefinition(dl, "現在のステータス", statusDisplay(cable.status));
-    addDefinition(dl, "一致項目", textEl("span", (payload.matched_by || []).join(", ")));
 
     if (payload.can_update) {
       addDefinition(dl, "ステータス更新", statusUpdateForm(payload.status_options, cable.status.value));
@@ -293,7 +298,61 @@
     }
 
     section.appendChild(dl);
+
+    const matchedBy = payload.matched_by || [];
+    if (matchedBy.length) {
+      const matched = textEl("p", "一致項目: " + matchedBy.join(", "), "result-meta text-muted small mb-0");
+      section.appendChild(matched);
+    }
+
     return section;
+  }
+
+  function renderEndpointSummary(endpoints) {
+    const section = document.createElement("section");
+    section.className = "result-section endpoint-summary";
+    section.appendChild(textEl("h5", "接続先サマリー", "result-section-title"));
+
+    const row = document.createElement("div");
+    row.className = "row g-2 align-items-stretch";
+
+    const aCol = document.createElement("div");
+    aCol.className = "col-12 col-md-5";
+    aCol.appendChild(endpointSummaryCard("A端", endpoints && endpoints.a_side));
+
+    const arrowCol = document.createElement("div");
+    arrowCol.className = "col-12 col-md-2 d-flex align-items-center justify-content-center";
+    const arrow = document.createElement("div");
+    arrow.className = "endpoint-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "⇔";
+    arrowCol.appendChild(arrow);
+
+    const bCol = document.createElement("div");
+    bCol.className = "col-12 col-md-5";
+    bCol.appendChild(endpointSummaryCard("B端", endpoints && endpoints.b_side));
+
+    row.appendChild(aCol);
+    row.appendChild(arrowCol);
+    row.appendChild(bCol);
+    section.appendChild(row);
+
+    return section;
+  }
+
+  function endpointSummaryCard(sideLabel, endpoint) {
+    const card = document.createElement("div");
+    card.className = "endpoint-card h-100";
+
+    const label = textEl("div", sideLabel, "endpoint-side-label");
+    card.appendChild(label);
+
+    const body = document.createElement("div");
+    body.className = "endpoint-value";
+    body.appendChild(endpoint ? objectRefNode(endpoint) : textEl("span", "未接続", "text-muted"));
+    card.appendChild(body);
+
+    return card;
   }
 
   function cableLink(cable) {
@@ -307,8 +366,10 @@
   }
 
   function statusDisplay(status) {
-    const span = textEl("span", status.label, "badge text-bg-info status-badge");
-    span.dataset.statusValue = status.value;
+    const value = status && status.value ? status.value : "";
+    const badgeClass = STATUS_BADGE_CLASS[value] || "text-bg-info";
+    const span = textEl("span", status && status.label ? status.label : "-", "badge " + badgeClass + " status-badge");
+    span.dataset.statusValue = value;
     return span;
   }
 
@@ -349,13 +410,47 @@
     dl.appendChild(dd);
   }
 
-  function renderTraceSection(title, items, endpoint) {
+  function renderTraceGrid(trace, endpoints) {
     const section = document.createElement("section");
     section.className = "result-section";
-    section.appendChild(textEl("h5", title));
+    section.appendChild(textEl("h5", "経路詳細", "result-section-title"));
+
+    const row = document.createElement("div");
+    row.className = "row g-3";
+
+    const aCol = document.createElement("div");
+    aCol.className = "col-12 col-lg-6";
+    aCol.appendChild(renderTraceSection("A端側の経路", trace && trace.a_side, endpoints && endpoints.a_side));
+
+    const bCol = document.createElement("div");
+    bCol.className = "col-12 col-lg-6";
+    bCol.appendChild(renderTraceSection("B端側の経路", trace && trace.b_side, endpoints && endpoints.b_side));
+
+    row.appendChild(aCol);
+    row.appendChild(bCol);
+    section.appendChild(row);
+
+    return section;
+  }
+
+  function renderTraceSection(title, items, endpoint) {
+    const section = document.createElement("section");
+    section.className = "trace-panel";
+
+    const details = document.createElement("details");
+    details.className = "trace-details";
+
+    const summary = document.createElement("summary");
+    summary.className = "trace-summary";
+    summary.appendChild(textEl("span", title, "trace-title"));
+    summary.appendChild(textEl("span", traceCountLabel(items), "badge text-bg-light trace-count"));
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "trace-body";
 
     if (!items || !items.length) {
-      section.appendChild(textEl("p", "未接続または経路情報がありません。", "text-muted mb-2"));
+      body.appendChild(textEl("p", "未接続または経路情報がありません。", "text-muted mb-2"));
     } else {
       const ol = document.createElement("ol");
       ol.className = "trace-list";
@@ -364,16 +459,24 @@
         li.appendChild(objectRefNode(item));
         ol.appendChild(li);
       }
-      section.appendChild(ol);
+      body.appendChild(ol);
     }
 
     const endpointLabel = document.createElement("p");
-    endpointLabel.className = "mt-2 mb-0";
+    endpointLabel.className = "trace-endpoint mt-2 mb-0";
     endpointLabel.appendChild(textEl("strong", "末端の接続先: "));
     endpointLabel.appendChild(endpoint ? objectRefNode(endpoint) : textEl("span", "未接続", "text-muted"));
-    section.appendChild(endpointLabel);
+    body.appendChild(endpointLabel);
+
+    details.appendChild(body);
+    section.appendChild(details);
 
     return section;
+  }
+
+  function traceCountLabel(items) {
+    const count = items && items.length ? items.length : 0;
+    return count + "件";
   }
 
   function objectRefNode(ref) {
