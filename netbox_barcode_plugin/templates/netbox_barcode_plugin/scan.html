@@ -5,7 +5,7 @@
 
 {% block extra_styles %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'netbox_barcode_plugin/css/barcode_scanner.css' %}">
+  <link rel="stylesheet" href="{% static 'netbox_barcode_plugin/css/barcode_scanner.css' %}?v={{ asset_version }}">
 {% endblock %}
 
 {% block content %}
@@ -79,6 +79,6 @@
 
 {% block javascript %}
   {{ block.super }}
-  <script src="{% static 'netbox_barcode_plugin/js/html5-qrcode.min.js' %}"></script>
-  <script src="{% static 'netbox_barcode_plugin/js/barcode_scanner.js' %}"></script>
+  <script src="{% static 'netbox_barcode_plugin/js/html5-qrcode.min.js' %}?v={{ asset_version }}"></script>
+  <script src="{% static 'netbox_barcode_plugin/js/barcode_scanner.js' %}?v={{ asset_version }}"></script>
 {% endblock %}
