@@ -14,6 +14,7 @@ class FakeCable:
         self.id = pk
         self.label = label
         self.display = label or f"Cable {pk}"
+        self._meta = type("Meta", (), {"model_name": "cable"})()
         self.custom_field_data = {}
         if barcode is not None:
             self.custom_field_data["barcode"] = barcode
@@ -44,6 +45,41 @@ class FakeManager:
             if item.pk == pk:
                 return item
         raise FakeCable.DoesNotExist()
+
+
+class FakeDevice:
+    def __init__(self, name):
+        self.name = name
+
+
+class FakePort:
+    """A minimal stand-in for a NetBox termination/port object."""
+
+    def __init__(self, pk, name, device_name, type_name, trace_path=None):
+        self.pk = pk
+        self.id = pk
+        self.name = name
+        self.device = FakeDevice(device_name)
+        # ``object_type_name`` reads ``_meta.model_name``.
+        self._meta = type("Meta", (), {"model_name": type_name})()
+        self._trace_path = trace_path
+
+    def get_absolute_url(self):
+        return f"/dcim/{self.__class__.__name__.lower()}/{self.pk}/"
+
+    def trace(self):
+        return self._trace_path if self._trace_path is not None else []
+
+
+def make_traced_cable(pk, a_term, b_term, a_trace, b_trace):
+    """Build a FakeCable whose terminations expose ``trace()`` results."""
+
+    cable = FakeCable(pk, label=f"CBL-{pk:06d}")
+    cable.a_terminations = [a_term] if a_term is not None else []
+    cable.b_terminations = [b_term] if b_term is not None else []
+    cable._a_trace = a_trace
+    cable._b_trace = b_trace
+    return cable
 
 
 def services_module():
@@ -122,6 +158,45 @@ def test_partial_match_is_not_accepted(monkeypatch):
 
     with pytest.raises(BarcodePluginError):
         services.find_cable_by_barcode("CBL-000")
+
+
+def test_trace_cable_separates_physical_and_logical_endpoints(monkeypatch):
+    services = patch_cables(monkeypatch, [])
+    a_direct = FakePort(101, "Front Port 01", "Patch Panel 01", "frontport")
+    b_direct = FakePort(201, "eth0", "Server01", "interface")
+    logical_a = FakePort(301, "GigabitEthernet1/0/1", "Switch01", "interface")
+
+    cable = make_traced_cable(10, a_term=a_direct, b_term=b_direct, a_trace=None, b_trace=None)
+    # NetBox's termination.trace() returns the complete end-to-end path. The
+    # service splits it at this cable. The A-side physical endpoint is the patch
+    # panel port, while the logical endpoint is the switch port reached by
+    # following the trace through that patching path.
+    a_direct._trace_path = [logical_a, a_direct, cable, b_direct]
+
+    trace, endpoints, trace_endpoints = services.trace_cable(cable)
+
+    assert endpoints["a_side"]["name"] == "Patch Panel 01 Front Port 01"
+    assert endpoints["a_side"]["type"] == "frontport"
+    assert endpoints["b_side"]["name"] == "Server01 eth0"
+    assert endpoints["b_side"]["type"] == "interface"
+    assert trace_endpoints["a_side"]["name"] == "Switch01 GigabitEthernet1/0/1"
+    assert trace_endpoints["a_side"]["type"] == "interface"
+    assert trace_endpoints["b_side"]["name"] == "Server01 eth0"
+    assert trace["a_side"][-1] == trace_endpoints["a_side"]
+    assert trace["b_side"][-1] == trace_endpoints["b_side"]
+
+
+def test_trace_cable_unconnected_side_has_null_endpoint(monkeypatch):
+    services = patch_cables(monkeypatch, [])
+    b_direct = FakePort(202, "eth1", "Server01", "interface")
+    cable = make_traced_cable(11, a_term=None, b_term=b_direct, a_trace=None, b_trace=None)
+
+    trace, endpoints, trace_endpoints = services.trace_cable(cable)
+
+    assert trace["a_side"] == []
+    assert endpoints["a_side"] is None
+    assert trace_endpoints["a_side"] is None
+    assert endpoints["b_side"]["name"] == "Server01 eth1"
 
 
 def test_custom_field_missing_returns_500(monkeypatch):

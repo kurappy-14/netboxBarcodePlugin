@@ -296,6 +296,20 @@ def _split_full_path(refs, cable_url, origin_side):
     return far_side_refs, origin_side_refs
 
 
+def _physical_endpoint(cable, side):
+    """Return the ObjectRef for a cable's directly-connected port on ``side``.
+
+    This is the *physical* port the cable is plugged into on that side (its own
+    A/B termination), as opposed to the logical far endpoint reached through
+    patch panels by ``trace()``. Returns ``None`` when the side is unconnected.
+    """
+
+    for termination in _cable_terminations(cable, side):
+        if termination is not None:
+            return object_ref(termination)
+    return None
+
+
 def trace_cable(cable):
     """Return A/B side trace arrays and endpoints for a Cable.
 
@@ -304,6 +318,13 @@ def trace_cable(cable):
     ends at the B-side device (and vice versa). To report each physical side
     correctly, the full path is split at this cable so that ``a_side`` always
     ends at the A-side endpoint and ``b_side`` at the B-side endpoint.
+
+    Two kinds of endpoints are returned:
+
+    - ``endpoints``: the *physical* ports the cable is directly plugged into on
+      each side (this cable's own A/B terminations).
+    - ``trace_endpoints``: the *logical* far endpoints reached by following the
+      full trace path through patch panels etc. (the last node of each side).
     """
 
     cable_url = get_object_url(cable)
@@ -345,10 +366,14 @@ def trace_cable(cable):
         "b_side": b_side,
     }
     endpoints = {
+        "a_side": _physical_endpoint(cable, "a"),
+        "b_side": _physical_endpoint(cable, "b"),
+    }
+    trace_endpoints = {
         "a_side": a_side[-1] if a_side else None,
         "b_side": b_side[-1] if b_side else None,
     }
-    return trace, endpoints
+    return trace, endpoints, trace_endpoints
 
 
 def build_lookup_response(user, raw_code, normalized_code, prefix):
@@ -364,7 +389,7 @@ def build_lookup_response(user, raw_code, normalized_code, prefix):
             status=403,
         )
 
-    trace, endpoints = trace_cable(cable)
+    trace, endpoints, trace_endpoints = trace_cable(cable)
     return {
         "success": True,
         "type": "cable",
@@ -379,6 +404,7 @@ def build_lookup_response(user, raw_code, normalized_code, prefix):
         "status_options": status_options(),
         "trace": trace,
         "endpoints": endpoints,
+        "trace_endpoints": trace_endpoints,
         "warnings": [],
     }
 

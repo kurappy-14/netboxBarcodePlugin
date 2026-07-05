@@ -115,6 +115,7 @@ X-CSRFToken: <csrftoken>
 - `status_options`
 - `trace`
 - `endpoints`
+- `trace_endpoints`
 - `warnings`
 
 検索仕様:
