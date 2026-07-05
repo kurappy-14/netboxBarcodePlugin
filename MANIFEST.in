@@ -1,0 +1,6 @@
+recursive-include netbox_barcode_plugin/templates *
+recursive-include netbox_barcode_plugin/static *
+recursive-include netbox_barcode_plugin/tests *
+include README.md
+include LICENSE
+include THIRD_PARTY_LICENSES.md
