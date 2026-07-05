@@ -273,7 +273,7 @@
 
     content.appendChild(renderCableSection(payload));
     content.appendChild(renderEndpointSummary(payload.endpoints));
-    content.appendChild(renderTraceGrid(payload.trace, payload.endpoints));
+    content.appendChild(renderTraceGrid(payload.trace, payload.trace_endpoints || traceEndpointsFromTrace(payload.trace)));
 
     card.classList.remove("d-none");
   }
@@ -311,7 +311,7 @@
   function renderEndpointSummary(endpoints) {
     const section = document.createElement("section");
     section.className = "result-section endpoint-summary";
-    section.appendChild(textEl("h5", "接続先サマリー", "result-section-title"));
+    section.appendChild(textEl("h5", "接続先サマリー（直結ポート）", "result-section-title"));
 
     const row = document.createElement("div");
     row.className = "row g-2 align-items-stretch";
@@ -431,6 +431,15 @@
     section.appendChild(row);
 
     return section;
+  }
+
+  function traceEndpointsFromTrace(trace) {
+    const aSide = trace && Array.isArray(trace.a_side) ? trace.a_side : [];
+    const bSide = trace && Array.isArray(trace.b_side) ? trace.b_side : [];
+    return {
+      a_side: aSide.length ? aSide[aSide.length - 1] : null,
+      b_side: bSide.length ? bSide[bSide.length - 1] : null,
+    };
   }
 
   function renderTraceSection(title, items, endpoint) {

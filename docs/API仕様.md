@@ -502,6 +502,20 @@ CBL-000001
   },
   "endpoints": {
     "a_side": {
+      "name": "Patch Panel 01 Front Port 01",
+      "type": "frontport",
+      "device": "Patch Panel 01",
+      "url": "/dcim/front-ports/1/"
+    },
+    "b_side": {
+      "name": "Server01 eth0",
+      "type": "interface",
+      "device": "Server01",
+      "url": "/dcim/interfaces/20/"
+    }
+  },
+  "trace_endpoints": {
+    "a_side": {
       "name": "Switch01 GigabitEthernet1/0/1",
       "type": "interface",
       "device": "Switch01",
@@ -534,7 +548,8 @@ CBL-000001
 | `can_update` | boolean | yes | ステータス更新可否 |
 | `status_options` | array[object] | yes | UI表示用ステータス選択肢 |
 | `trace` | object | yes | A端/B端の配線経路 |
-| `endpoints` | object | yes | A端/B端の最終接続先 |
+| `endpoints` | object | yes | A端/B端の物理的な直結ポート（サマリー表示用） |
+| `trace_endpoints` | object | yes | A端/B端の論理的な最終接続先（経路トレース末端用） |
 | `warnings` | array[string] | yes | 警告メッセージ。警告なしの場合は空配列 |
 
 ---
@@ -603,11 +618,43 @@ Cableのtrace結果は、A端側とB端側を分けて返す。
 
 ### `endpoints`
 
-A端/B端それぞれの最終接続先を返す。
+A端/B端それぞれの**物理的な直結ポート**を返す。
+これはケーブルが直接接続されている端子（このケーブル自身のA端/B端 termination）であり、
+スキャン結果画面の「接続先サマリー」で表示する。
 
 ```json
 {
   "endpoints": {
+    "a_side": {
+      "name": "Patch Panel 01 Front Port 01",
+      "type": "frontport",
+      "device": "Patch Panel 01",
+      "url": "/dcim/front-ports/1/"
+    },
+    "b_side": null
+  }
+}
+```
+
+| field | type | required | 内容 |
+|---|---|---|---|
+| `a_side` | ObjectRef/null | yes | A端側の直結ポート |
+| `b_side` | ObjectRef/null | yes | B端側の直結ポート |
+
+未接続の場合は `null` とする。
+
+---
+
+### `trace_endpoints`
+
+A端/B端それぞれの**論理的な最終接続先**を返す。
+これは `trace()` でパッチパネル等を貫通して到達する末端ポートであり、
+スキャン結果画面の「経路詳細」の末端接続先として表示する。
+値は各 side の trace 経路（`trace.a_side` / `trace.b_side`）の末尾要素に相当する。
+
+```json
+{
+  "trace_endpoints": {
     "a_side": {
       "name": "Switch01 GigabitEthernet1/0/1",
       "type": "interface",
@@ -621,8 +668,8 @@ A端/B端それぞれの最終接続先を返す。
 
 | field | type | required | 内容 |
 |---|---|---|---|
-| `a_side` | ObjectRef/null | yes | A端側の最終接続先 |
-| `b_side` | ObjectRef/null | yes | B端側の最終接続先 |
+| `a_side` | ObjectRef/null | yes | A端側の論理的な最終接続先 |
+| `b_side` | ObjectRef/null | yes | B端側の論理的な最終接続先 |
 
 未接続の場合は `null` とする。
 
@@ -1151,7 +1198,7 @@ async function updateCableStatus(cableId, cableStatus) {
 Cableの片端または両端が未接続であってもエラー扱いしない。
 
 - trace配列は空配列
-- endpointは `null`
+- endpoint（`endpoints` / `trace_endpoints`）は `null`
 
 として返す。
 
@@ -1232,6 +1279,10 @@ POST /plugins/barcode/api/lookup/
     "b_side": []
   },
   "endpoints": {
+    "a_side": null,
+    "b_side": null
+  },
+  "trace_endpoints": {
     "a_side": null,
     "b_side": null
   }
