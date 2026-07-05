@@ -25,6 +25,28 @@ class ScanView(LoginRequiredMixin, TemplateView):
 
     template_name = "netbox_barcode_plugin/scan.html"
 
+    def get_context_data(self, **kwargs):
+        """Expose the plugin version so static assets can be cache-busted.
+
+        NetBox serves plugin static files with a long ``max-age`` and without
+        content hashing, so browsers keep old JS/CSS after an upgrade. Appending
+        the plugin version as a query string forces clients to fetch the new
+        assets whenever the plugin version changes.
+        """
+
+        context = super().get_context_data(**kwargs)
+        context["asset_version"] = self._plugin_version()
+        return context
+
+    @staticmethod
+    def _plugin_version():
+        try:
+            from . import NetBoxBarcodePluginConfig
+
+            return NetBoxBarcodePluginConfig.version
+        except Exception:
+            return "0"
+
 
 def json_post_required(view_func):
     """Require POST while returning the plugin's JSON error shape."""
