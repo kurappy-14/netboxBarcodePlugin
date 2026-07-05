@@ -1,0 +1,151 @@
+.barcode-plugin {
+  max-width: 100%;
+}
+
+.barcode-reader {
+  width: 100%;
+  min-height: 280px;
+  border: 2px dashed var(--bs-border-color, #ced4da);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.barcode-reader video {
+  width: 100% !important;
+  border-radius: 0.5rem;
+}
+
+.manual-search .input-group > .form-control {
+  min-height: 44px;
+}
+
+.trace-list {
+  padding-left: 1.25rem;
+  margin-bottom: 0;
+}
+
+.trace-list li + li {
+  margin-top: 0.35rem;
+}
+
+.status-badge {
+  font-size: 0.95rem;
+}
+
+.result-section + .result-section {
+  margin-top: 1.25rem;
+}
+
+.result-section-title {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.result-meta {
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  padding-top: 0.5rem;
+}
+
+.endpoint-summary {
+  padding: 1rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.75rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.endpoint-card {
+  padding: 0.9rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.65rem;
+  background: var(--bs-body-bg, #fff);
+}
+
+.endpoint-side-label {
+  display: inline-block;
+  margin-bottom: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  color: var(--bs-primary-text-emphasis, #052c65);
+  background: var(--bs-primary-bg-subtle, #cfe2ff);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.endpoint-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.endpoint-value .text-muted {
+  font-weight: 400;
+}
+
+.endpoint-arrow {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.trace-panel {
+  height: 100%;
+}
+
+.trace-details {
+  height: 100%;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.65rem;
+  background: var(--bs-body-bg, #fff);
+}
+
+.trace-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.trace-summary::marker {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.trace-title {
+  font-weight: 600;
+}
+
+.trace-count {
+  color: var(--bs-secondary-color, #6c757d);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.trace-body {
+  padding: 0 1rem 1rem;
+}
+
+.trace-endpoint {
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+@media (max-width: 575.98px) {
+  .barcode-reader {
+    min-height: 220px;
+  }
+
+  .barcode-plugin .btn {
+    min-height: 44px;
+  }
+
+  .endpoint-summary {
+    padding: 0.75rem;
+  }
+
+  .endpoint-arrow {
+    transform: rotate(90deg);
+  }
+}

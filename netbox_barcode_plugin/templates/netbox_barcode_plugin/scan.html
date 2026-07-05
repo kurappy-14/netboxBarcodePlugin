@@ -1,0 +1,84 @@
+{% extends 'base/layout.html' %}
+{% load static %}
+
+{% block title %}バーコードをスキャン{% endblock %}
+
+{% block extra_styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'netbox_barcode_plugin/css/barcode_scanner.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="barcode-plugin container-fluid px-0"
+     data-lookup-url="{% url 'plugins:netbox_barcode_plugin:api_lookup' %}"
+     data-status-url-template="/plugins/barcode/api/cables/__CABLE_ID__/status/"
+     data-csrf-token="{{ csrf_token }}">
+  {% csrf_token %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-7">
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="mdi mdi-barcode-scan" aria-hidden="true"></i>
+          <strong>バーコードをスキャン</strong>
+        </div>
+        <div class="card-body">
+          <div id="barcode-alerts" class="mb-3" aria-live="polite"></div>
+
+          <div id="reader" class="barcode-reader mb-3" aria-label="バーコードスキャン領域"></div>
+
+          <div class="d-grid gap-2 d-sm-flex mb-3">
+            <button type="button" id="start-scan-button" class="btn btn-primary">
+              <i class="mdi mdi-camera" aria-hidden="true"></i>
+              スキャン開始
+            </button>
+            <button type="button" id="torch-button" class="btn btn-outline-warning" disabled>
+              <i class="mdi mdi-flashlight" aria-hidden="true"></i>
+              ライトON
+            </button>
+            <button type="button" id="rescan-button" class="btn btn-outline-secondary" disabled>
+              <i class="mdi mdi-reload" aria-hidden="true"></i>
+              再スキャン
+            </button>
+          </div>
+
+          <p id="torch-message" class="text-muted small mb-3 d-none">
+            この端末ではライト制御に対応していません
+          </p>
+
+          <form id="manual-search-form" class="manual-search" autocomplete="off">
+            <label for="manual-code" class="form-label">手入力で検索</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control"
+                     id="manual-code"
+                     name="code"
+                     maxlength="128"
+                     inputmode="text"
+                     placeholder="例: CBL-000001">
+              <button class="btn btn-outline-primary" type="submit">
+                <i class="mdi mdi-magnify" aria-hidden="true"></i>
+                検索
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="result-card" class="card d-none">
+        <div class="card-header">
+          <strong>照会結果</strong>
+        </div>
+        <div class="card-body">
+          <div id="result-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+  {{ block.super }}
+  <script src="{% static 'netbox_barcode_plugin/js/html5-qrcode.min.js' %}"></script>
+  <script src="{% static 'netbox_barcode_plugin/js/barcode_scanner.js' %}"></script>
+{% endblock %}
